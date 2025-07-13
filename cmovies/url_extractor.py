@@ -5,12 +5,12 @@ import logging
 from typing import Optional
 from playwright.async_api import async_playwright, Page, TimeoutError as PlaywrightTimeoutError
 
-from config import (
+from .config import (
     NAVIGATION_TIMEOUT, ELEMENT_WAIT_TIMEOUT, CLICK_TIMEOUT, M3U8_REQUEST_TIMEOUT,
     INITIAL_IFRAME_SELECTOR, PLAY_BUTTON_SELECTOR, PLAYER_IFRAME_SELECTOR,
     VIDSRC_BASE_URL
 )
-from utils import validate_url, validate_imdb_id, clean_imdb_id
+from .utils import validate_url, validate_imdb_id, clean_imdb_id
 
 logger = logging.getLogger(__name__)
 

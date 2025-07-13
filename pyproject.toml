@@ -12,4 +12,4 @@ dependencies = [
 ]
 
 [project.scripts]
-cmovies = "cli:main"
+cmovies = "cmovies.cli:main"

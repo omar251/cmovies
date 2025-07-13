@@ -5,8 +5,8 @@ from typing import List, Optional, Tuple
 from imdb import IMDb
 from pyfzf.pyfzf import FzfPrompt
 
-from utils import format_movie_info, extract_imdb_id_from_selection
-from config import MAX_SEARCH_RESULTS
+from .utils import format_movie_info, extract_imdb_id_from_selection
+from .config import MAX_SEARCH_RESULTS
 
 logger = logging.getLogger(__name__)
 

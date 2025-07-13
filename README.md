@@ -1,31 +1,41 @@
-# M3U8 URL Extractor for vidsrc.xyz
+# cmovies - M3U8 URL Extractor for vidsrc.xyz
 
-This script is designed to extract the M3U8 video stream URL from a `vidsrc.xyz` embed page. It uses Playwright to automate a headless browser and capture the network requests that reveal the final video stream.
+A Python application that extracts M3U8 video stream URLs from vidsrc.xyz embed pages using browser automation. The application provides both a unified CLI interface and modular Python APIs for movie search and URL extraction.
 
-## The Challenge
+## Features
 
-The target website, `vidsrc.xyz`, employs a multi-step process to protect its video streams. A simple `GET` request is not enough to get the M3U8 URL. The script needs to simulate a real user's actions to trigger the video player and reveal the stream.
+- **Interactive Movie Search**: Search and select movies using IMDb integration with fuzzy search
+- **Direct IMDb ID Input**: Extract URLs directly using IMDb IDs
+- **Robust Error Handling**: Comprehensive validation and error reporting
+- **Configurable Browser**: Option to run in headless or visible mode
+- **Flexible Output**: Save URLs to files or output to stdout
+- **Modular Design**: Well-structured codebase with separate concerns
 
-The process involves:
+## Quick Start
 
-1.  **Initial Page Load:** The first page loads an `iframe` that contains a poster of the movie and a play button.
-2.  **First Click:** The user must click the play button (or the poster itself) to trigger the next step.
-3.  **Second Iframe:** After the first click, a *second* `iframe` is dynamically created. This new iframe contains the actual video player.
-4.  **Video Player:** The video player in the second iframe may autoplay, or it may require another click to start.
-5.  **M3U8 Request:** The M3U8 URL is only requested when the video player in the second iframe begins to play.
+1. **Install dependencies**:
+   ```bash
+   uv sync
+   playwright install chromium
+   ```
 
-## The Solution
+2. **Run interactive search**:
+   ```bash
+   python run.py --search
+   ```
 
-This script automates the entire process:
+3. **Or use direct IMDb ID**:
+   ```bash
+   python run.py --imdb-id tt0133093
+   ```
 
-1.  **Launches Playwright:** It starts a headless Chromium browser.
-2.  **Navigates to the Page:** It loads the initial `vidsrc.xyz` embed URL.
-3.  **Finds the First Iframe:** It locates the first `iframe` on the page.
-4.  **Listens for M3U8:** It sets up a listener to intercept any network requests for files ending in `.m3u8`.
-5.  **Clicks the Play Button:** It uses a JavaScript-based click to simulate a user clicking the play button. This was a key step, as a standard Playwright click was not always effective.
-6.  **Waits for the Second Iframe:** It waits for the second `iframe` (with the ID `player_iframe`) to be created.
-7.  **Interacts with the Player:** It clicks inside the second `iframe` to ensure the video starts playing.
-8.  **Captures the URL:** The M3U8 listener captures the URL of the video stream.
-9.  **Returns the URL:** The script prints the final M3U8 URL to the console.
+## How It Works
 
-This multi-step, carefully sequenced approach allows the script to successfully navigate the site's protections and extract the video stream URL.
+The application automates the complex multi-step process required to extract video URLs from vidsrc.xyz:
+
+1. **Initial Page Load**: Loads the vidsrc.xyz embed page containing an iframe with movie poster
+2. **First Interaction**: Clicks the play button to trigger the next step
+3. **Second Iframe**: Waits for the dynamic creation of the actual video player iframe
+4. **Video Activation**: Interacts with the video player to start playback
+5. **Network Monitoring**: Captures the M3U8 URL when the video player requests the stream
+6. **URL Extraction**: Returns the final M3U8 video stream URL

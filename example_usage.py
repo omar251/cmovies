@@ -12,9 +12,9 @@ from typing import Optional
 
 # Note: These imports will work once dependencies are installed
 try:
-    from movie_search import MovieSearcher, MovieSearchError
-    from url_extractor import M3U8Extractor, URLExtractionError
-    from utils import validate_imdb_id, clean_imdb_id, setup_logging
+    from cmovies.movie_search import MovieSearcher, MovieSearchError
+    from cmovies.url_extractor import M3U8Extractor, URLExtractionError
+    from cmovies.utils import validate_imdb_id, clean_imdb_id, setup_logging
     DEPENDENCIES_AVAILABLE = True
 except ImportError as e:
     print(f"Dependencies not installed: {e}")
@@ -22,7 +22,7 @@ except ImportError as e:
     DEPENDENCIES_AVAILABLE = False
     # Fallback imports for basic functionality
     try:
-        from utils import validate_imdb_id, clean_imdb_id
+        from cmovies.utils import validate_imdb_id, clean_imdb_id
         def setup_logging(level):
             import logging
             logging.basicConfig(level=getattr(logging, level.upper()))

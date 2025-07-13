@@ -11,9 +11,9 @@ import sys
 import logging
 from typing import Optional
 
-from utils import setup_logging, validate_imdb_id, clean_imdb_id
-from movie_search import interactive_movie_search, MovieSearchError
-from url_extractor import extract_m3u8_url, URLExtractionError
+from .utils import setup_logging, validate_imdb_id, clean_imdb_id
+from .movie_search import interactive_movie_search, MovieSearchError
+from .url_extractor import extract_m3u8_url, URLExtractionError
 
 def create_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""
