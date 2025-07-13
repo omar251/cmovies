@@ -69,7 +69,8 @@ async def get_m3u8_url(page_url: str):
 
 # --- Main execution ---
 # Target URL
-video_page_url = "https://vidsrc.xyz/embed/movie/tt5433140"
+video_page_url = "https://vidsrc.xyz/embed/movie/"
+video_page_url += input("Enter imdb ID: ")
 
 if __name__ == "__main__":
     print("Starting headless browser to find M3U8...")
