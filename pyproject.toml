@@ -1,13 +1,15 @@
 [project]
-name = "temp"
+name = "cmovies"
 version = "0.1.0"
-description = "Add your description here"
+description = "extract the M3U8 video stream URL from a movie website"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "bs4>=0.0.2",
     "imdbpy>=2022.7.9",
     "playwright>=1.53.0",
     "pyfzf>=0.3.1",
     "requests>=2.32.4",
 ]
+
+[project.scripts]
+cmovies = "cli:main"
