@@ -23,7 +23,7 @@ DEFAULT_PLAYER="mpv"
 # Initialize variables
 container_format="$DEFAULT_CONTAINER"
 output_filename=""
-silent_mode=false
+quiet_mode=false
 resume_mode=false
 url=""
 format_flag=""
@@ -34,14 +34,17 @@ player="$DEFAULT_PLAYER"
 
 # Function to print colored output
 print_info() {
+    [[ "$quiet_mode" == true ]] && return
     echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 print_success() {
+    [[ "$quiet_mode" == true ]] && return
     echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 print_warning() {
+    [[ "$quiet_mode" == true ]] && return
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
@@ -82,7 +85,7 @@ OPTIONS:
   -c, --container FORMAT   Container format (mkv, mp4, etc.) [default: $DEFAULT_CONTAINER].
   -f, --format FORMAT      yt-dlp format code (e.g., '136+140', 'best', 'worst').
   -o, --output FILENAME    Output filename (extension is added automatically).
-  -s, --silent             Silent mode (no interactive prompts).
+  -q, --quiet              Quiet mode (no interactive prompts).
   -r, --resume             Resume incomplete downloads (not applicable in --play mode).
   --player PLAYER          Player to use (mpv, vlc, etc.) [default: $DEFAULT_PLAYER].
 
@@ -149,8 +152,8 @@ while [[ $# -gt 0 ]]; do
             output_filename="$2"
             shift
             ;;
-        -s|--silent)
-            silent_mode=true
+        -q|--quiet)
+            quiet_mode=true
             ;;
         -r|--resume)
             resume_mode=true
@@ -205,8 +208,8 @@ check_dependencies
 
 # Interactively ask for video/audio format if not specified
 get_streams() {
-    # Skip if format is already set, or in silent/stream mode
-    if [[ -n "$format_flag" || "$silent_mode" == true || "$play_mode" == "stream" ]]; then
+    # Skip if format is already set, or in quiet/stream mode
+    if [[ -n "$format_flag" || "$quiet_mode" == true || "$play_mode" == "stream" ]]; then
         return
     fi
 
@@ -233,8 +236,8 @@ get_streams
 
 # Get a filename if one is needed and not provided
 get_filename() {
-    # Skip if streaming, playing, or in silent mode (no file saved or filename is handled by the player/caller)
-    if [[ "$play_mode" == "stream" || "$play_mode" == "play" || "$silent_mode" == true ]]; then
+    # Skip if streaming, playing, or in quiet mode (no file saved or filename is handled by the player/caller)
+    if [[ "$play_mode" == "stream" || "$play_mode" == "play" || "$quiet_mode" == true ]]; then
         return
     fi
 
@@ -242,7 +245,7 @@ get_filename() {
     if [[ -z "${output_filename:-}" ]]; then
         local suggested_name
         suggested_name=$(date +"%Y-%m-%d_%H%M%S")
-        if [[ "$silent_mode" == false ]]; then
+        if [[ "$quiet_mode" == false ]]; then
             read -p "Enter filename (suggestion: $suggested_name): " output_filename
             # Use suggestion if input is empty
             output_filename=${output_filename:-$suggested_name}
@@ -270,7 +273,7 @@ check_file_exists() {
         print_info "File '$output_filename' exists. Resume mode is enabled."
     else
         print_warning "File '$output_filename' already exists."
-        if [[ "$silent_mode" == false ]]; then
+        if [[ "$quiet_mode" == false ]]; then
             read -p "Overwrite? (y/N): " overwrite
             if [[ ! "$overwrite" =~ ^[Yy]$ ]]; then
                 print_info "Operation cancelled."
