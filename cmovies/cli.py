@@ -75,74 +75,61 @@ Examples:
     
     return parser
 
-def handle_movie_search() -> Optional[str]:
-    """
-    Handle interactive movie search workflow.
-    
-    Returns:
-        IMDb ID if movie selected, None otherwise
-    """
-    try:
-        return interactive_movie_search()
-    except MovieSearchError as e:
-        logging.error(f"Movie search failed: {e}")
-        print(f"Error: {e}", file=sys.stderr)
-        return None
-    except KeyboardInterrupt:
-        print("\nSearch cancelled by user.", file=sys.stderr)
-        return None
+def handle_error(message: str, e: Optional[Exception] = None, quiet: bool = False) -> None:
+    """Log and print an error message."""
+    logging.error(f"{message}: {e}" if e else message)
+    if not quiet:
+        print(f"Error: {message}", file=sys.stderr)
 
-def handle_imdb_id_input(imdb_id: str) -> Optional[str]:
-    """
-    Handle direct IMDb ID input.
+def get_imdb_id(args: argparse.Namespace) -> Optional[str]:
+    """Determine the IMDb ID from command-line arguments."""
+    if args.search:
+        if not args.quiet:
+            print("Starting interactive movie search...")
+        try:
+            return interactive_movie_search()
+        except MovieSearchError as e:
+            handle_error("Movie search failed", e, args.quiet)
+            return None
+        except KeyboardInterrupt:
+            print("\nSearch cancelled by user.", file=sys.stderr)
+            return None
     
-    Args:
-        imdb_id: The provided IMDb ID
+    if args.imdb_id:
+        if not validate_imdb_id(args.imdb_id):
+            handle_error(f"Invalid IMDb ID format: {args.imdb_id}", quiet=args.quiet)
+            return None
+        return clean_imdb_id(args.imdb_id)
         
-    Returns:
-        Cleaned IMDb ID if valid, None otherwise
-    """
-    if not validate_imdb_id(imdb_id):
-        print(f"Error: Invalid IMDb ID format: {imdb_id}", file=sys.stderr)
-        print("IMDb IDs should be 7-8 digits, optionally prefixed with 'tt'", file=sys.stderr)
-        return None
-    
-    return clean_imdb_id(imdb_id)
+    if args.url:
+        if "vidsrc.xyz/embed/movie/" in args.url:
+            try:
+                url_imdb_id = args.url.split("/")[-1]
+                if not validate_imdb_id(url_imdb_id):
+                    handle_error(f"Could not extract valid IMDb ID from URL: {args.url}", quiet=args.quiet)
+                    return None
+                return clean_imdb_id(url_imdb_id)
+            except Exception:
+                handle_error(f"Could not parse IMDb ID from URL: {args.url}", quiet=args.quiet)
+                return None
+        else:
+            handle_error("Direct URL extraction not yet implemented for non-vidsrc URLs", quiet=args.quiet)
+            return None
+            
+    return None
 
-def extract_and_output_url(imdb_id: str = None, url: str = None, headless: bool = True, 
-                          output_file: str = None, quiet: bool = False) -> bool:
-    """
-    Extract M3U8 URL and handle output.
-    
-    Args:
-        imdb_id: IMDb ID to use for extraction
-        url: Direct URL to use for extraction
-        headless: Whether to run browser in headless mode
-        output_file: File to save URL to
-        quiet: Whether to suppress non-essential output
-        
-    Returns:
-        True if successful, False otherwise
-    """
+def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[str], quiet: bool) -> bool:
+    """Extract M3U8 URL and handle output."""
     try:
         if not quiet:
             print("Starting M3U8 URL extraction...")
         
-        # Extract the URL
-        if imdb_id:
-            m3u8_url = extract_m3u8_url(imdb_id, headless=headless)
-        else:
-            # For direct URL extraction, we'd need to modify the extractor
-            # For now, this is a placeholder
-            print("Error: Direct URL extraction not yet implemented", file=sys.stderr)
-            return False
+        m3u8_url = extract_m3u8_url(imdb_id, headless=headless)
         
         if not m3u8_url:
-            if not quiet:
-                print("Failed to extract M3U8 URL", file=sys.stderr)
+            handle_error("Failed to extract M3U8 URL", quiet=quiet)
             return False
-        
-        # Output the URL
+            
         if output_file:
             try:
                 with open(output_file, 'w') as f:
@@ -150,89 +137,39 @@ def extract_and_output_url(imdb_id: str = None, url: str = None, headless: bool 
                 if not quiet:
                     print(f"M3U8 URL saved to: {output_file}")
             except IOError as e:
-                print(f"Error saving to file: {e}", file=sys.stderr)
+                handle_error(f"Error saving to file: {e}", quiet=quiet)
                 return False
         
-        # Always print the URL (unless quiet mode and saved to file)
         if not (quiet and output_file):
             print(m3u8_url)
-        
+            
         return True
         
     except URLExtractionError as e:
-        logging.error(f"URL extraction failed: {e}")
-        if not quiet:
-            print(f"Error: {e}", file=sys.stderr)
+        handle_error("URL extraction failed", e, quiet)
         return False
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
-        if not quiet:
-            print(f"Unexpected error: {e}", file=sys.stderr)
+        handle_error("An unexpected error occurred", e, quiet)
         return False
 
 def main() -> int:
-    """
-    Main CLI entry point.
-    
-    Returns:
-        Exit code (0 for success, 1 for failure)
-    """
+    """Main CLI entry point."""
     parser = create_parser()
     args = parser.parse_args()
     
-    # Set up logging
-    if args.quiet:
-        log_level = "ERROR"
-    elif args.verbose:
-        log_level = "DEBUG"
-    else:
-        log_level = "INFO"
-    
+    log_level = "ERROR" if args.quiet else "DEBUG" if args.verbose else "INFO"
     setup_logging(log_level)
-    logger = logging.getLogger(__name__)
     
     try:
-        # Determine the IMDb ID or URL to use
-        imdb_id = None
-        url = None
+        imdb_id = get_imdb_id(args)
         
-        if args.search:
+        if not imdb_id:
             if not args.quiet:
-                print("Starting interactive movie search...")
-            imdb_id = handle_movie_search()
-            if not imdb_id:
-                if not args.quiet:
-                    print("No movie selected. Exiting.")
-                return 1
-        elif args.imdb_id:
-            imdb_id = handle_imdb_id_input(args.imdb_id)
-            if not imdb_id:
-                return 1
-            # Ensure we have the 'tt' prefix for consistency
-            imdb_id = clean_imdb_id(imdb_id)
-        elif args.url:
-            url = args.url
-            # For now, we'll extract IMDb ID from the URL if it's a vidsrc.xyz URL
-            if "vidsrc.xyz/embed/movie/" in url:
-                try:
-                    # Extract the digits from the URL
-                    url_imdb_id = url.split("/")[-1]
-                    if not validate_imdb_id(url_imdb_id):
-                        print(f"Error: Could not extract valid IMDb ID from URL: {url}", file=sys.stderr)
-                        return 1
-                    # Clean and ensure 'tt' prefix
-                    imdb_id = clean_imdb_id(url_imdb_id)
-                except Exception:
-                    print(f"Error: Could not parse IMDb ID from URL: {url}", file=sys.stderr)
-                    return 1
-            else:
-                print("Error: Direct URL extraction not yet implemented for non-vidsrc URLs", file=sys.stderr)
-                return 1
-        
-        # Extract and output the M3U8 URL
+                print("Could not determine IMDb ID. Exiting.", file=sys.stderr)
+            return 1
+            
         success = extract_and_output_url(
             imdb_id=imdb_id,
-            url=url,
             headless=not args.no_headless,
             output_file=args.output,
             quiet=args.quiet
@@ -245,9 +182,7 @@ def main() -> int:
             print("\nOperation cancelled by user.", file=sys.stderr)
         return 1
     except Exception as e:
-        logger.error(f"Unexpected error in main: {e}")
-        if not args.quiet:
-            print(f"Unexpected error: {e}", file=sys.stderr)
+        handle_error("An unexpected error occurred in main", e, args.quiet)
         return 1
 
 if __name__ == "__main__":
