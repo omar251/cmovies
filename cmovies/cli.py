@@ -9,6 +9,7 @@ and M3U8 URL extraction functionality.
 import argparse
 import sys
 import logging
+import subprocess
 from typing import Optional
 
 from .utils import setup_logging, validate_imdb_id, clean_imdb_id
@@ -73,6 +74,43 @@ Examples:
         help="Suppress all output except the M3U8 URL"
     )
     
+    # ytdl-plus integration
+    ytdl_plus_group = parser.add_argument_group(
+        "ytdl-plus integration",
+        "Options to play, stream, or download the extracted URL using ytdl-plus.sh"
+    )
+    ytdl_plus_group.add_argument(
+        "--play",
+        action="store_true",
+        help="Play the video with a media player (e.g., mpv, vlc)"
+    )
+    ytdl_plus_group.add_argument(
+        "--stream",
+        action="store_true",
+        help="Stream the video directly to the player without saving"
+    )
+    ytdl_plus_group.add_argument(
+        "--download",
+        action="store_true",
+        help="Download the video using yt-dlp"
+    )
+    ytdl_plus_group.add_argument(
+        "--record",
+        action="store_true",
+        help="Record the video stream using mpv's built-in recorder"
+    )
+    ytdl_plus_group.add_argument(
+        "--player",
+        type=str,
+        default="mpv",
+        help="Player to use (mpv, vlc, etc.) [default: mpv]"
+    )
+    ytdl_plus_group.add_argument(
+        "--ytdlp-format",
+        type=str,
+        help="yt-dlp format code (e.g., 'best', '136+140')"
+    )
+    
     return parser
 
 def handle_error(message: str, e: Optional[Exception] = None, quiet: bool = False) -> None:
@@ -118,7 +156,39 @@ def get_imdb_id(args: argparse.Namespace) -> Optional[str]:
             
     return None
 
-def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[str], quiet: bool) -> bool:
+def handle_ytdl_plus(m3u8_url: str, args: argparse.Namespace) -> bool:
+    """Handle the ytdl-plus.sh script execution."""
+    command = ["./ytdl-plus.sh"]
+    
+    if args.play:
+        command.append("--play")
+    elif args.stream:
+        command.append("--stream")
+    elif args.download:
+        # ytdl-plus.sh default behavior is to download
+        pass
+    elif args.record:
+        command.append("--record")
+        
+    if args.player:
+        command.extend(["--player", args.player])
+        
+    if args.ytdlp_format:
+        command.extend(["--format", args.ytdlp_format])
+        
+    command.append(m3u8_url)
+    
+    try:
+        subprocess.run(command, check=True)
+        return True
+    except FileNotFoundError:
+        handle_error("ytdl-plus.sh not found. Make sure it's in the same directory.", quiet=args.quiet)
+        return False
+    except subprocess.CalledProcessError as e:
+        handle_error(f"ytdl-plus.sh failed with exit code {e.returncode}", quiet=args.quiet)
+        return False
+
+def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[str], quiet: bool, args: argparse.Namespace) -> bool:
     """Extract M3U8 URL and handle output."""
     try:
         if not quiet:
@@ -129,6 +199,9 @@ def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[s
         if not m3u8_url:
             handle_error("Failed to extract M3U8 URL", quiet=quiet)
             return False
+        
+        if args.play or args.stream or args.download or args.record:
+            return handle_ytdl_plus(m3u8_url, args)
             
         if output_file:
             try:
@@ -172,7 +245,8 @@ def main() -> int:
             imdb_id=imdb_id,
             headless=not args.no_headless,
             output_file=args.output,
-            quiet=args.quiet
+            quiet=args.quiet,
+            args=args
         )
         
         return 0 if success else 1
