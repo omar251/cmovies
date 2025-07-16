@@ -17,7 +17,7 @@ python run.py --imdb-id 1234567
 
 ### Show Browser Window (for debugging)
 ```bash
-python run.py --imdb-id tt1234567 --no-headless
+python run.py --imdb-id tt1234567 --show-browser
 ```
 
 ### Save Output to File
@@ -73,7 +73,7 @@ Key settings can be modified in `cmovies/config.py`:
 
 ### Debug Mode
 
-Run with `--no-headless` to see the browser window and debug issues:
+Run with `--show-browser` to see the browser window and debug issues:
 ```bash
-python run.py --imdb-id tt1234567 --no-headless --verbose
+python run.py --imdb-id tt1234567 --show-browser --verbose
 ```

@@ -112,11 +112,14 @@ def example_cli_usage():
     print("\n=== CLI Usage Examples ===")
     
     examples = [
-        "python cli.py --search",
-        "python cli.py --imdb-id tt1234567",
-        "python cli.py --imdb-id 1234567 --output movie.m3u8",
-        "python cli.py --search --no-headless --verbose",
-        "python cli.py --imdb-id tt1234567 --quiet"
+        'python run.py "The Matrix"              # Default mode: search and play',
+        "python run.py --search                  # Interactive movie search",
+        "python run.py --imdb-id tt1234567       # Direct IMDb ID input",
+        "python run.py --imdb-id 1234567 --output movie.m3u8  # Save to file",
+        "python run.py --search --show-browser --verbose      # Debug mode",
+        "python run.py --imdb-id tt1234567 --quiet            # Quiet mode",
+        "python run.py --imdb-id tt1234567 --play             # Play video",
+        "python run.py --imdb-id tt1234567 --download          # Download video"
     ]
     
     print("Command examples:")

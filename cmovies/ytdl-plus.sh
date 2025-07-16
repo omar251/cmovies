@@ -316,7 +316,7 @@ execute_operation() {
 
             if ! "${ytdlp_args[@]}" | tee "$output_filename" | "$player" - ; then
                 # This message usually appears when the user closes the player.
-                print_warning "Player exited (Code: $?). The 'tee' command will ensure the download completes."
+                [[ "$quiet_mode" == false ]] && print_warning "Player exited (Code: $?). The 'tee' command will ensure the download completes."
             fi
             ;;
 

@@ -11,7 +11,7 @@
 - Interactive movie search: `python cli.py --search`
 - Direct IMDb ID input: `python cli.py --imdb-id tt1234567`
 - Flexible output options: `--output file.txt`, `--quiet`, `--verbose`
-- Browser control: `--no-headless` for debugging
+- Browser control: `--show-browser` for debugging
 - Comprehensive help: `python cli.py --help`
 
 ### 2. Error Handling & Input Validation ✅
@@ -139,7 +139,7 @@ python cli.py --search
 python cli.py --imdb-id tt1234567 --output movie.m3u8
 
 # Debug mode
-python cli.py --search --no-headless --verbose
+python cli.py --search --show-browser --verbose
 ```
 
 ## Benefits Achieved

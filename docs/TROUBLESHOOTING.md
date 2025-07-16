@@ -29,7 +29,7 @@ playwright install chromium
 **Symptoms**: No iframes found on the page
 
 **Solutions**:
-- Run with visible browser to inspect: `python cli.py --imdb-id tt0133093 --no-headless`
+- Run with visible browser to inspect: `python cli.py --imdb-id tt0133093 --show-browser`
 - Use the debug script: `python simple_test.py`
 - Check if selectors need updating in `config.py`
 
@@ -70,7 +70,7 @@ This will:
 
 #### Step 3: Run Full Extraction with Debug
 ```bash
-python cli.py --imdb-id tt0133093 --no-headless --verbose
+python cli.py --imdb-id tt0133093 --show-browser --verbose
 ```
 
 #### Step 4: Check Configuration

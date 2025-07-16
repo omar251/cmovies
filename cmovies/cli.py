@@ -140,11 +140,11 @@ def get_imdb_id(args: argparse.Namespace) -> Optional[str]:
             # Interactive mode: prompt for query
             imdb_id = interactive_movie_search(silent_mode=args.quiet)
         elif not query and args.quiet:
-            # Silent mode without query: error
-            handle_error("Search query required for silent mode (--search with --quiet)", quiet=args.quiet)
+            # Quiet mode without query: error
+            handle_error("Search query required for quiet mode (--search with --quiet)", quiet=args.quiet)
             return None
         else:
-            # Silent mode with query: pass query directly
+            # Quiet mode with query: pass query directly
             imdb_id = interactive_movie_search(silent_mode=args.quiet, search_query=query)
         return imdb_id
     
@@ -207,7 +207,8 @@ def handle_ytdl_plus(m3u3_url: str, movie_title: str, args: argparse.Namespace) 
         
     command.append(m3u3_url)
     
-    print(f"Executing ytdl-plus.sh command: {' '.join(command)}")
+    if not args.quiet:
+        print(f"Executing ytdl-plus.sh command: {' '.join(command)}")
     try:
         subprocess.run(command, check=True)
         return True
@@ -216,6 +217,9 @@ def handle_ytdl_plus(m3u3_url: str, movie_title: str, args: argparse.Namespace) 
         return False
     except subprocess.CalledProcessError as e:
         handle_error(f"ytdl-plus.sh failed with exit code {e.returncode}", quiet=args.quiet)
+        return False
+    except Exception as e:
+        handle_error(f"Unexpected error running ytdl-plus.sh: {e}", quiet=args.quiet)
         return False
 
 def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[str], quiet: bool, args: argparse.Namespace) -> bool:
@@ -270,8 +274,14 @@ def main() -> int:
             handle_error("Cannot use movie title with --search, --imdb-id, or --url", quiet=False)
             return 1
         
+        # Validate movie title
+        if not args.movie_title.strip():
+            handle_error("Movie title cannot be empty", quiet=False)
+            return 1
+        
         # Make default mode behavior explicit
-        print(f"Default mode: searching '{args.movie_title}', playing with lowest quality")
+        if not args.quiet:
+            print(f"Default mode: searching '{args.movie_title}', playing with lowest quality")
         
         args.search = args.movie_title
         args.play = True

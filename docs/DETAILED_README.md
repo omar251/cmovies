@@ -50,7 +50,7 @@ python cli.py --imdb-id 1234567
 
 #### Show Browser Window (for debugging)
 ```bash
-python cli.py --imdb-id tt1234567 --no-headless
+python cli.py --imdb-id tt1234567 --show-browser
 ```
 
 #### Save Output to File
@@ -145,9 +145,9 @@ The application includes comprehensive error handling:
 
 ### Debug Mode
 
-Run with `--no-headless` to see the browser window and debug issues:
+Run with `--show-browser` to see the browser window and debug issues:
 ```bash
-python cli.py --imdb-id tt1234567 --no-headless --verbose
+python cli.py --imdb-id tt1234567 --show-browser --verbose
 ```
 
 ## Legal Notice
