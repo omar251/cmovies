@@ -13,3 +13,6 @@ dependencies = [
 
 [project.scripts]
 cmovies = "cmovies.cli:main"
+
+[tool.setuptools.package-data]
+cmovies = ["ytdl-plus.sh"]

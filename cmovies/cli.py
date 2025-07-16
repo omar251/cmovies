@@ -10,6 +10,7 @@ import argparse
 import sys
 import logging
 import subprocess
+import importlib.resources
 from typing import Optional
 
 from .utils import setup_logging, validate_imdb_id, clean_imdb_id
@@ -158,7 +159,10 @@ def get_imdb_id(args: argparse.Namespace) -> Optional[str]:
 
 def handle_ytdl_plus(m3u3_url: str, movie_title: str, args: argparse.Namespace) -> bool:
     """Handle the ytdl-plus.sh script execution."""
-    command = ["./ytdl-plus.sh"]
+    
+    # Get the path to ytdl-plus.sh from the installed package
+    ytdl_plus_script_path = str(importlib.resources.files('cmovies').joinpath('ytdl-plus.sh'))
+    command = [ytdl_plus_script_path]
     
     if args.stream:
         command.append("--stream")
