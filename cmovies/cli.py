@@ -156,19 +156,24 @@ def get_imdb_id(args: argparse.Namespace) -> Optional[str]:
             
     return None
 
-def handle_ytdl_plus(m3u8_url: str, args: argparse.Namespace) -> bool:
+def handle_ytdl_plus(m3u3_url: str, movie_title: str, args: argparse.Namespace) -> bool:
     """Handle the ytdl-plus.sh script execution."""
     command = ["./ytdl-plus.sh"]
     
-    if args.play:
-        command.append("--play")
-    elif args.stream:
+    if args.stream:
         command.append("--stream")
+    elif args.play:
+        command.append("--play")
+        command.extend(["-o", f"cmovies-{movie_title}"])
     elif args.download:
         # ytdl-plus.sh default behavior is to download
-        pass
+        command.extend(["-o", f"cmovies-{movie_title}"])
     elif args.record:
         command.append("--record")
+        command.extend(["-o", f"cmovies-{movie_title}"])
+
+    # Always run ytdl-plus.sh in silent mode when called from cmovies
+    command.append("--silent")
         
     if args.player:
         command.extend(["--player", args.player])
@@ -176,8 +181,9 @@ def handle_ytdl_plus(m3u8_url: str, args: argparse.Namespace) -> bool:
     if args.ytdlp_format:
         command.extend(["--format", args.ytdlp_format])
         
-    command.append(m3u8_url)
+    command.append(m3u3_url)
     
+    print(f"Executing ytdl-plus.sh command: {' '.join(command)}")
     try:
         subprocess.run(command, check=True)
         return True
@@ -194,19 +200,21 @@ def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[s
         if not quiet:
             print("Starting M3U8 URL extraction...")
         
-        m3u8_url = extract_m3u8_url(imdb_id, headless=headless)
+        extraction_result = extract_m3u8_url(imdb_id, headless=headless)
         
-        if not m3u8_url:
+        if not extraction_result:
             handle_error("Failed to extract M3U8 URL", quiet=quiet)
             return False
+            
+        m3u3_url, movie_title = extraction_result
         
         if args.play or args.stream or args.download or args.record:
-            return handle_ytdl_plus(m3u8_url, args)
+            return handle_ytdl_plus(m3u3_url, movie_title, args)
             
         if output_file:
             try:
                 with open(output_file, 'w') as f:
-                    f.write(m3u8_url + '\n')
+                    f.write(m3u3_url + '\n')
                 if not quiet:
                     print(f"M3U8 URL saved to: {output_file}")
             except IOError as e:
@@ -214,7 +222,7 @@ def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[s
                 return False
         
         if not (quiet and output_file):
-            print(m3u8_url)
+            print(m3u3_url)
             
         return True
         

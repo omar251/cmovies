@@ -55,15 +55,15 @@ class M3U8Extractor:
         logger.info(f"Built URL: {url} (from IMDb ID: {cleaned_id})")
         return url
 
-    async def extract_from_url(self, page_url: str) -> Optional[str]:
+    async def extract_from_url(self, page_url: str) -> Optional[tuple[str, str]]:
         """
-        Extract M3U8 URL from the given page URL.
+        Extract M3U8 URL and page title from the given page URL.
 
         Args:
             page_url: The vidsrc.xyz embed URL
 
         Returns:
-            M3U8 URL if found, None otherwise
+            A tuple containing the M3U8 URL and the page title if found, None otherwise
 
         Raises:
             URLExtractionError: If extraction fails
@@ -101,14 +101,25 @@ class M3U8Extractor:
                     });
                 """)
 
-                # Navigate to the page
-                logger.info("Navigating to page...")
-                await page.goto(page_url, wait_until="networkidle", timeout=NAVIGATION_TIMEOUT)
+                # Navigate to the page with retries
+                for attempt in range(3):
+                    try:
+                        logger.info(f"Navigating to page (attempt {attempt + 1}/3)...")
+                        await page.goto(page_url, wait_until="domcontentloaded", timeout=NAVIGATION_TIMEOUT)
+                        break
+                    except PlaywrightTimeoutError as e:
+                        if attempt == 2:
+                            raise e
+                        logger.warning(f"Timeout during navigation, retrying...")
+                        await asyncio.sleep(5)
+
+                # Get page title
+                page_title = await page.title()
+                logger.info(f"Page title: {page_title}")
 
                 # Find initial iframe
                 logger.info("Locating initial iframe...")
                 logger.info(f"Page URL: {page.url}")
-                logger.info(f"Page title: {await page.title()}")
                 
                 # Check if page loaded properly
                 await page.wait_for_load_state("domcontentloaded")
@@ -148,7 +159,7 @@ class M3U8Extractor:
 
                 m3u8_url = request.url
                 logger.info(f"Successfully extracted M3U8 URL: {m3u8_url}")
-                return m3u8_url
+                return m3u8_url, page_title
 
             except PlaywrightTimeoutError as e:
                 logger.error(f"Timeout during extraction: {e}")
@@ -217,7 +228,7 @@ class M3U8Extractor:
         except Exception as e:
             raise URLExtractionError(f"Failed to interact with player: {e}")
 
-    async def extract_from_imdb_id(self, imdb_id: str) -> Optional[str]:
+    async def extract_from_imdb_id(self, imdb_id: str) -> Optional[tuple[str, str]]:
         """
         Extract M3U8 URL using IMDb ID.
 
@@ -225,7 +236,7 @@ class M3U8Extractor:
             imdb_id: The IMDb ID
 
         Returns:
-            M3U8 URL if found, None otherwise
+            A tuple containing the M3U8 URL and the page title if found, None otherwise
 
         Raises:
             URLExtractionError: If extraction fails
@@ -233,7 +244,7 @@ class M3U8Extractor:
         url = self.build_url(imdb_id)
         return await self.extract_from_url(url)
 
-def extract_m3u8_url(imdb_id: str, headless: bool = True) -> Optional[str]:
+def extract_m3u8_url(imdb_id: str, headless: bool = True) -> Optional[tuple[str, str]]:
     """
     Synchronous wrapper for M3U8 URL extraction.
 
@@ -242,7 +253,7 @@ def extract_m3u8_url(imdb_id: str, headless: bool = True) -> Optional[str]:
         headless: Whether to run browser in headless mode
 
     Returns:
-        M3U8 URL if found, None otherwise
+        A tuple containing the M3U8 URL and the page title if found, None otherwise
     """
     try:
         extractor = M3U8Extractor(headless=headless)

@@ -1,7 +1,7 @@
 # Configuration constants for the cmovies application
 
 # Timeout settings (in milliseconds)
-NAVIGATION_TIMEOUT = 45000
+NAVIGATION_TIMEOUT = 90000
 ELEMENT_WAIT_TIMEOUT = 20000
 CLICK_TIMEOUT = 10000
 M3U8_REQUEST_TIMEOUT = 60000

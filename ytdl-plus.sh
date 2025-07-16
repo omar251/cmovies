@@ -205,8 +205,8 @@ check_dependencies
 
 # Interactively ask for video/audio format if not specified
 get_streams() {
-    # Skip if format is already set, or in silent/stream mode
-    if [[ -n "$format_flag" || "$silent_mode" == true || "$play_mode" == "stream" ]]; then
+    # Skip if format is already set, or in silent/stream/play mode
+    if [[ -n "$format_flag" || "$silent_mode" == true || "$play_mode" == "stream" || "$play_mode" == "play" ]]; then
         return
     fi
 
@@ -233,8 +233,8 @@ get_streams
 
 # Get a filename if one is needed and not provided
 get_filename() {
-    # Skip if streaming (no file saved)
-    if [[ "$play_mode" == "stream" ]]; then
+    # Skip if streaming, playing, or in silent mode (no file saved or filename is handled by the player/caller)
+    if [[ "$play_mode" == "stream" || "$play_mode" == "play" || "$silent_mode" == true ]]; then
         return
     fi
 
