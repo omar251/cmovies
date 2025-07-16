@@ -178,7 +178,9 @@ def handle_ytdl_plus(m3u3_url: str, movie_title: str, args: argparse.Namespace) 
     if args.player:
         command.extend(["--player", args.player])
         
-    if args.ytdlp_format:
+    if not args.ytdlp_format:
+        command.extend(["--format", "worst"])
+    else:
         command.extend(["--format", args.ytdlp_format])
         
     command.append(m3u3_url)
