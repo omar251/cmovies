@@ -24,15 +24,25 @@ def create_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --search                    # Interactive movie search
-  %(prog)s --imdb-id tt1234567         # Direct IMDb ID input
+  %(prog)s "The Matrix"            # Default mode: search, play, and save "The Matrix" (lowest quality)
+  %(prog)s --search                # Interactive movie search
+  %(prog)s --search "Inception"    # Silent search for "Inception"
+  %(prog)s --imdb-id tt1234567     # Direct IMDb ID input
   %(prog)s --imdb-id 1234567 --no-headless  # Show browser window
   %(prog)s --url "https://vidsrc.xyz/embed/movie/1234567"  # Direct URL
         """
     )
+
+    # Positional argument for default mode
+    parser.add_argument(
+        "movie_title",
+        nargs="?",  # 0 or 1 argument
+        type=str,
+        help="Movie title for default search mode (implies --search --play --quiet)"
+    )
     
     # Input options (mutually exclusive)
-    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group = parser.add_mutually_exclusive_group() # Removed required=True
     input_group.add_argument(
         "--search", "-s",
         nargs="?",  # Makes the argument optional
@@ -161,7 +171,7 @@ def get_imdb_id(args: argparse.Namespace) -> Optional[str]:
             
     return None
 
-def handle_ytdl_plus(m3u3_url: str, movie_title: str, args: argparse.Namespace) -> bool:
+def handle_ytdl_plus(m3u3_url: str, movie_title: str, args: argparse.Namespace, quiet_mode_requested: bool) -> bool:
     """Handle the ytdl-plus.sh script execution."""
     
     # Get the path to ytdl-plus.sh from the installed package
@@ -180,15 +190,17 @@ def handle_ytdl_plus(m3u3_url: str, movie_title: str, args: argparse.Namespace) 
         command.append("--record")
         command.extend(["-o", f"cmovies-{movie_title}"])
 
-    # Always run ytdl-plus.sh in silent mode when called from cmovies
-    command.append("--silent")
+    # Pass --silent only if --quiet is true
+    if args.quiet:
+        command.append("--silent")
         
     if args.player:
         command.extend(["--player", args.player])
         
-    if not args.ytdlp_format:
+    # Only add --format if --quiet is true and no specific format is provided
+    if args.quiet and not args.ytdlp_format:
         command.extend(["--format", "worst"])
-    else:
+    elif args.ytdlp_format:
         command.extend(["--format", args.ytdlp_format])
         
     command.append(m3u3_url)
@@ -198,13 +210,13 @@ def handle_ytdl_plus(m3u3_url: str, movie_title: str, args: argparse.Namespace) 
         subprocess.run(command, check=True)
         return True
     except FileNotFoundError:
-        handle_error("ytdl-plus.sh not found. Make sure it's in the same directory.", quiet=args.quiet)
+        handle_error("ytdl-plus.sh not found. Make sure it's in the installed package.", quiet=args.quiet)
         return False
     except subprocess.CalledProcessError as e:
         handle_error(f"ytdl-plus.sh failed with exit code {e.returncode}", quiet=args.quiet)
         return False
 
-def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[str], quiet: bool, args: argparse.Namespace) -> bool:
+def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[str], quiet: bool, args: argparse.Namespace, quiet_mode_requested: bool) -> bool:
     """Extract M3U8 URL and handle output."""
     try:
         if not quiet:
@@ -219,7 +231,7 @@ def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[s
         m3u3_url, movie_title = extraction_result
         
         if args.play or args.stream or args.download or args.record:
-            return handle_ytdl_plus(m3u3_url, movie_title, args)
+            return handle_ytdl_plus(m3u3_url, movie_title, args, quiet_mode_requested)
             
         if output_file:
             try:
@@ -235,6 +247,7 @@ def extract_and_output_url(imdb_id: str, headless: bool, output_file: Optional[s
             print(m3u3_url)
             
         return True
+
         
     except URLExtractionError as e:
         handle_error("URL extraction failed", e, quiet)
@@ -247,7 +260,25 @@ def main() -> int:
     """Main CLI entry point."""
     parser = create_parser()
     args = parser.parse_args()
+
+    # Store original quiet state
+    quiet_mode_requested = args.quiet
+
+    # Handle default mode (positional argument)
+    if args.movie_title:
+        if any([args.search is not None, args.imdb_id, args.url]):
+            handle_error("Cannot use positional argument with --search, --imdb-id, or --url", quiet=False)
+            return 1
+        args.search = args.movie_title
+        args.play = True
+        args.quiet = True # Implicitly quiet in default mode
     
+    # Ensure at least one input method is provided if not in default mode
+    if not any([args.search is not None, args.imdb_id, args.url]):
+        handle_error("No input method provided. Use --search, --imdb-id, --url, or a movie title.", quiet=False)
+        parser.print_help()
+        return 1
+
     log_level = "ERROR" if args.quiet else "DEBUG" if args.verbose else "INFO"
     setup_logging(log_level)
     
@@ -264,7 +295,8 @@ def main() -> int:
             headless=not args.no_headless,
             output_file=args.output,
             quiet=args.quiet,
-            args=args
+            args=args,
+            quiet_mode_requested=quiet_mode_requested
         )
         
         return 0 if success else 1

@@ -205,8 +205,8 @@ check_dependencies
 
 # Interactively ask for video/audio format if not specified
 get_streams() {
-    # Skip if format is already set, or in silent/stream/play mode
-    if [[ -n "$format_flag" || "$silent_mode" == true || "$play_mode" == "stream" || "$play_mode" == "play" ]]; then
+    # Skip if format is already set, or in silent/stream mode
+    if [[ -n "$format_flag" || "$silent_mode" == true || "$play_mode" == "stream" ]]; then
         return
     fi
 
