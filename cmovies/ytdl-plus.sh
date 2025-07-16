@@ -308,7 +308,7 @@ execute_operation() {
             # 2. tee receives the stream, saves it to '$output_filename', and also passes it to its standard output.
             # 3. The player reads the stream from its standard input (-).
             # This pipeline is more robust than trying to watch for a temporary file.
-            ytdlp_args=("yt-dlp" "$url" "--output" "-")
+            ytdlp_args=("yt-dlp" "$url" "--output" "-" "--downloader" "ffmpeg" "--hls-use-mpegts")
             [[ -n "$format_flag" ]] && ytdlp_args+=("--format" "$format_flag")
 
             if ! "${ytdlp_args[@]}" | tee "$output_filename" | "$player" - ; then

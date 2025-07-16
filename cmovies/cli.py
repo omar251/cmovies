@@ -35,8 +35,10 @@ Examples:
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument(
         "--search", "-s",
-        action="store_true",
-        help="Interactive movie search using IMDb"
+        nargs="?",  # Makes the argument optional
+        const="",   # Value if argument is present but no value given
+        type=str,
+        help="Interactive movie search using IMDb. Provide a query for silent mode."
     )
     input_group.add_argument(
         "--imdb-id", "-i",
@@ -122,17 +124,19 @@ def handle_error(message: str, e: Optional[Exception] = None, quiet: bool = Fals
 
 def get_imdb_id(args: argparse.Namespace) -> Optional[str]:
     """Determine the IMDb ID from command-line arguments."""
-    if args.search:
-        if not args.quiet:
-            print("Starting interactive movie search...")
-        try:
-            return interactive_movie_search()
-        except MovieSearchError as e:
-            handle_error("Movie search failed", e, args.quiet)
+    if args.search is not None:
+        query = args.search
+        if not query and not args.quiet:
+            # Interactive mode: prompt for query
+            imdb_id = interactive_movie_search(silent_mode=args.quiet)
+        elif not query and args.quiet:
+            # Silent mode without query: error
+            handle_error("Search query required for silent mode (--search with --quiet)", quiet=args.quiet)
             return None
-        except KeyboardInterrupt:
-            print("\nSearch cancelled by user.", file=sys.stderr)
-            return None
+        else:
+            # Silent mode with query: pass query directly
+            imdb_id = interactive_movie_search(silent_mode=args.quiet, search_query=query)
+        return imdb_id
     
     if args.imdb_id:
         if not validate_imdb_id(args.imdb_id):

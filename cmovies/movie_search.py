@@ -59,12 +59,13 @@ class MovieSearcher:
             logger.error(f"Movie search failed: {e}")
             raise MovieSearchError(f"Failed to search for movies: {e}")
     
-    def select_movie(self, movies: List) -> Optional[str]:
+    def select_movie(self, movies: List, silent_mode: bool = False) -> Optional[str]:
         """
         Allow user to select a movie from search results.
         
         Args:
             movies: List of movie objects from IMDb search
+            silent_mode: If True, automatically select the first movie.
             
         Returns:
             Selected movie's IMDb ID or None if no selection
@@ -73,6 +74,13 @@ class MovieSearcher:
             MovieSearchError: If selection fails
         """
         try:
+            if silent_mode:
+                if not movies:
+                    return None
+                movie_id = extract_imdb_id_from_selection(format_movie_info(movies[0]))
+                logger.info(f"Automatically selected first movie in silent mode: {movie_id}")
+                return movie_id
+
             # Prepare movie list for fzf
             movie_list = [format_movie_info(movie) for movie in movies]
             
@@ -96,12 +104,13 @@ class MovieSearcher:
             logger.error(f"Movie selection failed: {e}")
             raise MovieSearchError(f"Failed to select movie: {e}")
     
-    def search_and_select(self, query: str) -> Optional[str]:
+    def search_and_select(self, query: str, silent_mode: bool = False) -> Optional[str]:
         """
         Combined search and selection workflow.
         
         Args:
             query: The search query
+            silent_mode: If True, automatically select the first movie.
             
         Returns:
             Selected movie's IMDb ID or None if no selection
@@ -110,17 +119,36 @@ class MovieSearcher:
             MovieSearchError: If search or selection fails
         """
         movies = self.search_movies(query)
-        return self.select_movie(movies)
+        return self.select_movie(movies, silent_mode)
 
-def interactive_movie_search() -> Optional[str]:
+def interactive_movie_search(silent_mode: bool = False, search_query: Optional[str] = None) -> Optional[str]:
     """
     Interactive movie search workflow.
     
+    Args:
+        silent_mode: If True, automatically select the first movie.
+        search_query: Optional search query to use instead of prompting the user.
+
     Returns:
         Selected movie's IMDb ID or None if cancelled
     """
     try:
         searcher = MovieSearcher()
+        
+        if search_query:
+            query = search_query.strip()
+            if not query:
+                raise MovieSearchError("Search query cannot be empty")
+            try:
+                movie_id = searcher.search_and_select(query, silent_mode)
+                if movie_id:
+                    return movie_id
+                else:
+                    print("No movie selected for the given query.", file=sys.stderr)
+                    return None
+            except MovieSearchError as e:
+                print(f"Search error: {e}", file=sys.stderr)
+                return None
         
         while True:
             query = input("Enter movie title (or 'quit' to exit): ").strip()
@@ -134,7 +162,7 @@ def interactive_movie_search() -> Optional[str]:
                 continue
             
             try:
-                movie_id = searcher.search_and_select(query)
+                movie_id = searcher.search_and_select(query, silent_mode)
                 if movie_id:
                     return movie_id
                 else:
