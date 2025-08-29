@@ -9,6 +9,7 @@ dependencies = [
     "playwright>=1.53.0",
     "pyfzf>=0.3.1",
     "requests>=2.32.4",
+    "brotli>=1.0.0",
 ]
 
 [project.scripts]
